@@ -1,6 +1,5 @@
 import itertools, random
 import pypm
-from time import sleep
 
 DEFAULT_VOLUME = 60
 DEFAULT_BPM = 120
@@ -74,7 +73,7 @@ def midi_note(note, octave=None):
     return midi_notes.index((note, octave))
 
 def midi_chord(key, chord):
-    return [midi_note(root) + (interval - 1) for interval in intervals]
+    return [midi_note(key) + (interval - 1) for interval in chord]
 
 class Instrument(object):
     def __init__(self, id, latency=1, channel='0'):
@@ -86,7 +85,7 @@ class Instrument(object):
     def open_output(self):
         pypm.Initialize()
         return pypm.Output(self.id, self.latency)
-    
+
     def send_midi(self, note, channel=None, command=None, time=None, volume=None):
         if command is None:
             command = '0x9'
@@ -125,7 +124,7 @@ class Instrument(object):
 
     def noteoff(self, note=None, channel=None, time=None):
         if note is None:
-            self.send_multiple(((note, channel, '0x8', None, 0) for note in range(128))) 
+            self.send_multiple(((note, channel, '0x8', None, 0) for note in range(128)))
         else:
             if type(note) is str:
                 note = midi_note(note)
@@ -154,7 +153,7 @@ class Instrument(object):
         self.send_multiple([(note, channel, '0x9', None, volume) for note in notes])
         self.send_multiple([(note, channel, '0x8', length+pypm.Time(), 0) for note in notes])
 
-    def play_arp(self, chord, arp_func, channel=None, volume=None):
+    def play_arp(self, chord, arp_func, channel=None, volume=None, length=None):
         if isinstance(chord, Chord):
             notes = chord.midi
         elif type(chord) is str:
@@ -183,7 +182,7 @@ class Instrument(object):
             except:
                 print "    End"
             for i in range(4):
-                play_chord(progression[index])
+                self.play_chord(progression[index])
 
 def frange(start,step,stop):
     step *= 2*((stop>start)^(step<0))-1
@@ -209,7 +208,7 @@ def logarithmic(start, step, stop):
     return [log(x, 2)*(10/log(10, 2)) for x in frange(start, step, stop)]
 
 def exponential(start, step, stop):
-    return [(y / (stop - start)) for y in [x*x for x in frange(start, step, stop)]] 
+    return [(y / (stop - start)) for y in [x*x for x in frange(start, step, stop)]]
 
 class LiveMode(object):
     def __init__(self, chords=None, instruments=None):
@@ -228,7 +227,7 @@ class Note(object):
         self.midi = self.to_midi(note, octave)
 
     def to_midi(self, note, octave):
-        return 
+        return
 
 def flat_five(chord):
     chord[2] = chord[2] - 1
@@ -255,14 +254,14 @@ class Interval:
     tritone = dim_5th = flat_five = 6
     fifth = perfect_5th = 7
     min_6th = aug_5th = 8
-    sixth = maj_6th = 9 
+    sixth = maj_6th = 9
     min_7th = aug_6th = 10
     seventh = maj_7th = 11
     octave = 12
     flat_9 = 13
     ninth = 14
     sharp_9 = aug_9th= 15
-    eleventh = 16 
+    eleventh = 16
     thirteenth = 17
 
 class Chord(object):
@@ -390,7 +389,7 @@ class Chord(object):
         self._update([0, 3, 7])
         return self
 
-    def dim_triad(self): 
+    def dim_triad(self):
         self._update([0, 3, 6])
         return self
 
@@ -398,7 +397,7 @@ class Chord(object):
         self._update([0, 4, 8])
         return self
 
-    def seventh(self): 
+    def seventh(self):
         self._update([0, 4, 7, 10])
         return self
 
@@ -410,7 +409,7 @@ class Chord(object):
         self._update([0, 4, 7, 10])
         return self
 
-    def dim_7th(self): 
+    def dim_7th(self):
         self._update([0, 3, 6, 10])
         return self
 
@@ -419,7 +418,6 @@ class Chord(object):
         return self
 
     def seventh_flat_five(self): pass
-    def ninth(self): pass
     def min_maj_7th(self): pass
     def maj_6th(self): pass
     def min_6th(self): pass
@@ -459,7 +457,7 @@ class Chord(object):
     def submediant7(self): pass
     def subtonic(self): pass
     def subtonic7(self): pass
- 
+
     I, II, III, IV, V, VI = (shift_notes(diatonic, x) for x in range(6))
     ii, iii, vi, vii = (shift_notes(diatonic, x) for x in range(4))
     I7, II7, III7, IV7, V7, VI7 = (shift_notes(diatonic, x) for x in range(6))
@@ -480,7 +478,7 @@ class Chord(object):
 class Scale(object):
     def __init__(self, key):
         self.key = key
-        self.notes = to_notes(key)
+        self.notes = self.to_notes(key)
 
     def to_midi(self, key, scale):
         if type(key) is str:
@@ -498,23 +496,19 @@ class Scale(object):
 class Progression(object):
     def __init__(self, key, sequence):
         self.key = key
-        self.sequence = convert_seq(sequence)
+        self.sequence = self.convert_seq(sequence)
 
-    def convert_seq(self, sequence):
-        chords = sequence.split()
-        for chord in chords:
-            chord_symbol
 
-    def to_chords(self, key, chords):
+    def to_chords(self, key, chords, changes):
         print "Scale tones",
-        for note in tones[:11]: print midi_notes[note],
+        for note in chords[:11]: print midi_notes[note],
         print
         chords = []
         print "Chords:"
         for change in changes:
             change -= 1
-            print midi_notes[tones[change]] + ":",
-            chord = [tones[change + interval] for interval in [0, 2, 4, 6]]
+            print midi_notes[chords[change]] + ":",
+            chord = [chords[change + interval] for interval in [0, 2, 4, 6]]
             for note in chord: print midi_notes[note],
             print
             chords.append(chord)

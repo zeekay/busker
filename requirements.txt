@@ -1,0 +1,2 @@
+pyrex
+-e git+https://github.com/grantma/python-portmidi.git#egg=python-portmidi
